@@ -8,13 +8,14 @@ from scipy import linalg
 
 MAX_ITER = 1000
 
+
 def soft_threshold(a, b):
     # vectorized version
     return np.sign(a) * np.fmax(np.abs(a) - b, 0)
 
 
 def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
-                verbose=False):
+                       verbose=False):
     """
     Linear least-squares with l2/l1 + l1 regularization solver.
 
@@ -36,6 +37,9 @@ def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
     alpha : float or array
         Amount of penalization to use.
 
+    rho : float
+        Amount of l1 penalization
+
     groups : array of shape (n_features,)
         Group label. For each column, it indicates
         its group apertenance.
@@ -47,7 +51,7 @@ def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
 
     Returns
     -------
-    x : array
+    coef : array
         vector of coefficients
 
     References
@@ -57,7 +61,8 @@ def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
     # .. local variables ..
     X, y, groups, alpha = map(np.asanyarray, (X, y, groups, alpha))
     if groups.shape[0] != X.shape[1]:
-        raise ValueError('Groups should be of shape %s got %s instead' % ((X.shape[1],), groups.shape))
+        raise ValueError('Groups should be of shape %s got %s instead' % (
+            (X.shape[1],), groups.shape))
     w_new = np.zeros(X.shape[1], dtype=X.dtype)
     n_samples = X.shape[0]
     alpha = alpha * n_samples
@@ -72,7 +77,9 @@ def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
     for n_iter in range(max_iter):
         w_old = w_new.copy()
         perm = np.random.permutation(len(group_labels))
-        X_residual = Xy - np.dot(K, w_new) # could be updated, but kernprof says it's peanuts
+        # could be updated, but kernprof says it's peanuts
+        # .. step 1 ..
+        X_residual = Xy - np.dot(K, w_new)
         for i in perm:
             group = group_labels[i]
             #import ipdb; ipdb.set_trace()
@@ -85,10 +92,12 @@ def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
                 w_new[group] = 0.
             else:
                 # .. step 3 ..
-                for _ in range(2 * group.size): # just a heuristic
-                    grad_l =  - (X_r_k - np.dot(Kgg, w_new[group]))
-                    tmp = soft_threshold(w_new[group] - step_size * grad_l, step_size * rho * alpha)
-                    tmp *= max(1 - step_size * p_j * (1 - rho) * alpha / np.linalg.norm(tmp), 0)
+                for _ in range(2 * group.size):  # just a heuristic
+                    grad_l = - (X_r_k - np.dot(Kgg, w_new[group]))
+                    tmp = soft_threshold(
+                        w_new[group] - step_size * grad_l, step_size * rho * alpha)
+                    tmp *= max(1 - step_size * p_j * (1 - rho)
+                               * alpha / np.linalg.norm(tmp), 0)
                     delta = linalg.norm(tmp - w_new[group])
                     w_new[group] = tmp
                     if delta < 1e-3:
@@ -103,7 +112,6 @@ def sparse_group_lasso(X, y, alpha, rho, groups, max_iter=MAX_ITER, rtol=1e-6,
     return w_new
 
 
-
 def group_lasso_check_kkt(A, b, x, alpha, groups):
     """Auxiliary function.
     Check KKT conditions for the group lasso
@@ -114,7 +122,7 @@ def group_lasso_check_kkt(A, b, x, alpha, groups):
     group_labels = [groups == i for i in np.unique(groups)]
     alpha = alpha * A.shape[0]
     z = np.dot(A.T, np.dot(A, x) - b)
-    safety_net = .1 # sort of tolerance
+    safety_net = .1  # sort of tolerance
     for g in group_labels:
         alpha_g = alpha * np.sqrt(np.sum(g))
         if linalg.norm(x[g]) == 0:
@@ -125,7 +133,7 @@ def group_lasso_check_kkt(A, b, x, alpha, groups):
             if not np.allclose(z[g], w, safety_net):
                 return False
             return True
-    return True # all zeros
+    return True  # all zeros
 
 
 if __name__ == '__main__':
@@ -138,18 +146,19 @@ if __name__ == '__main__':
     y = diabetes.target
     groups = np.arange(X.shape[1]) // 5
     coefs = sparse_group_lasso(X, y, alpha, 0., groups, verbose=True)
-    print('KKT conditions verified:', group_lasso_check_kkt(X, y, coefs, alpha, groups))
+    print('KKT conditions verified:',
+          group_lasso_check_kkt(X, y, coefs, alpha, groups))
 
     X = np.random.randn(100, 10)
     y = np.random.randn(100)
     groups = np.arange(X.shape[1]) // 10
     coefs = sparse_group_lasso(X, y, alpha, 0., groups, verbose=True)
-    print('KKT conditions verified:', group_lasso_check_kkt(X, y, coefs, alpha, groups))
+    print('KKT conditions verified:',
+          group_lasso_check_kkt(X, y, coefs, alpha, groups))
 
     X = np.random.randn(1000, 300)
     y = np.random.randn(1000)
     groups = np.arange(X.shape[1]) // 100
     coefs = sparse_group_lasso(X, y, alpha, 0., groups, verbose=True)
-    print('KKT conditions verified:', group_lasso_check_kkt(X, y, coefs, alpha, groups))
-
-
+    print('KKT conditions verified:',
+          group_lasso_check_kkt(X, y, coefs, alpha, groups))
