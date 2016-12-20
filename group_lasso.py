@@ -9,8 +9,9 @@ import group_lasso_fast as gl
 class _BaseGroupLasso(object):
 
     def fit(self, X, y):
-        self.coefs = gl.solve_group_lasso(
-            X, y, self.alpha, self.l1, self.groups, self.tol, self.verbose)
+        self.coef_ = gl.solve_group_lasso(X, y, self.alpha, self.l1,
+                                          self.groups, self.max_iter, self.tol,
+                                          self.verbose)
 
         return self
 
@@ -25,6 +26,7 @@ class GroupLasso(_BaseGroupLasso):
         self.groups = groups
         self.tol = tol
         self.l1 = 0.
+        self.max_iter = max_iter
         self.verbose = verbose
 
 
@@ -35,5 +37,6 @@ class SparseGroupLasso(_BaseGroupLasso):
         self.alpha = alpha
         self.groups = groups
         self.tol = tol
+        self.max_iter = max_iter
         self.l1 = l1
         self.verbose = verbose
