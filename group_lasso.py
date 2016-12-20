@@ -3,6 +3,7 @@
 # License: BSD
 import math
 import numpy as np
+import group_lasso_fast as gl
 from scipy import linalg
 
 

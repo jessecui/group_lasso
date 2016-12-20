@@ -17,14 +17,14 @@ cdef soft_threshold(np.ndarray[double, ndim=1] a,
     return np.sign(a) * np.fmax(np.abs(a) - b, 0)
 
 
-cpdef sparse_group_lasso(np.ndarray[double, ndim=2] X,
-                         np.ndarray[double] y,
-                         double alpha,
-                         double rho,
-                         np.ndarray[long] groups,
-                         int max_iter=MAX_ITER,
-                         double rtol=1e-6,
-                         int verbose=0):
+cpdef solve_group_lasso(np.ndarray[double, ndim=2] X,
+                        np.ndarray[double] y,
+                        double alpha,
+                        double rho,
+                        np.ndarray[long] groups,
+                        int max_iter=MAX_ITER,
+                        double rtol=1e-6,
+                        int verbose=0):
     """
     Linear least-squares with l2/l1 + l1 regularization solver.
 
