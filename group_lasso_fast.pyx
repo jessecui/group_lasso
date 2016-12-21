@@ -23,8 +23,7 @@ cpdef solve_group_lasso(np.ndarray[double, ndim=2] X,
                         double rho,
                         np.ndarray[long] groups,
                         int max_iter=MAX_ITER,
-                        double rtol=1e-6,
-                        int verbose=0):
+                        double rtol=1e-6):
     """
     Linear least-squares with l2/l1 + l1 regularization solver.
 
